@@ -1,3 +1,4 @@
+// src/Components/Home.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import { FaWhatsapp } from "react-icons/fa";
@@ -19,9 +20,6 @@ export default function Home() {
 
   const { isMobile, isTablet } = useScreen();
 
-  // Mobile nav state
-  const [menuOpen, setMenuOpen] = React.useState(false);
-
   // Reviews grid columns (responsive)
   const reviewCols = isMobile ? 1 : isTablet ? 2 : 5;
 
@@ -35,65 +33,10 @@ export default function Home() {
   const aboutGrid = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1.2fr 1fr";
 
   const styles = {
-    topbar: {
-      background: "#f6f6f6",
-      color: "#333",
-      fontSize: 14,
-      padding: "6px 16px",
-    },
     container: {
       maxWidth: 1200,
       margin: "0 auto",
       padding: `0 ${containerPad}px`,
-    },
-    header: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "12px 0",
-      position: "relative",
-    },
-    logoWrap: { display: "flex", alignItems: "center", gap: 12 },
-    logoImg: { height: isMobile ? 40 : 48, width: "auto", objectFit: "contain" },
-    tagline: { fontSize: 12, color: "#666" },
-    nav: {
-      display: isMobile ? "none" : "flex",
-      gap: 18,
-      flexWrap: "wrap",
-      alignItems: "center",
-    },
-    navLink: { textDecoration: "none", color: "#222", fontWeight: 500 },
-    burger: {
-      display: isMobile ? "flex" : "none",
-      height: 36,
-      width: 44,
-      alignItems: "center",
-      justifyContent: "center",
-      border: "1px solid #ddd",
-      borderRadius: 8,
-      background: "#fff",
-      cursor: "pointer",
-    },
-    drawer: {
-      position: "absolute",
-      top: "64px",
-      right: 0,
-      background: "#fff",
-      border: "1px solid #eee",
-      borderRadius: 12,
-      padding: 12,
-      boxShadow: "0 10px 24px rgba(0,0,0,0.08)",
-      display: menuOpen ? "block" : "none",
-      zIndex: 50,
-      minWidth: 220,
-    },
-    drawerLink: {
-      display: "block",
-      padding: "10px 12px",
-      textDecoration: "none",
-      color: "#222",
-      fontWeight: 500,
-      borderRadius: 8,
     },
     hero: {
       position: "relative",
@@ -162,12 +105,6 @@ export default function Home() {
       fontSize: isMobile ? 13 : 14,
       textAlign: isMobile ? "center" : "left",
     },
-    about: {
-      display: "grid",
-      gridTemplateColumns: aboutGrid,
-      gap: 18,
-      alignItems: "center",
-    },
     aboutImg: {
       width: "100%",
       borderRadius: 12,
@@ -211,107 +148,10 @@ export default function Home() {
       textDecoration: "none",
       transition: "transform 0.2s ease, boxShadow 0.2s ease",
     },
-    small: { fontSize: 12, color: "#777" },
-    phoneRow: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      gap: 8,
-      flexWrap: "wrap",
-    },
-    // Hover for desktop
-    hover: { filter: "brightness(0.95)" },
   };
-
-  const navItems = [
-    "Home",
-    "BookingForm",
-    "EMICalculator",
-    "Gallery",
-    "Contact",
-    "Login",
-    "About Us"
-  ];
 
   return (
     <div>
-      {/* Topbar */}
-      <div style={styles.topbar}>
-        <div style={styles.container}>
-          <div style={styles.phoneRow}>
-            <div>
-              Sales : <strong>9731366921</strong>
-            </div>
-            <div style={styles.small}>Open 9:00 AM – 8:30 PM • Mon–Sat <span>
-              Opens 9:00 AM – 2:30 PM • Sunday</span></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Header */}
-      <div style={styles.container}>
-        <header style={styles.header}>
-          <div style={styles.logoWrap}>
-            <img
-              src="/shantha-logo.png"
-              alt="Shantha Motors Logo"
-              style={styles.logoImg}
-              onError={(e) => {
-                e.currentTarget.src =
-                  "https://via.placeholder.com/200x48?text=Shantha+Motors";
-              }}
-            />
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 800 }}>Shantha Motors</div>
-              <div style={styles.tagline}>The Power of Trust</div>
-            </div>
-          </div>
-
-          {/* Desktop/Tablet nav */}
-          <nav style={styles.nav} aria-label="Primary">
-            {navItems.map((item) => {
-              const path = "/" + item.toLowerCase().replace(/\s+/g, "-");
-              return (
-                <Link key={item} to={path} style={styles.navLink}>
-                  {item}
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Mobile burger */}
-          <button
-            aria-label="Toggle menu"
-            style={styles.burger}
-            onClick={() => setMenuOpen((s) => !s)}
-          >
-            {/* simple burger icon */}
-            <div style={{ display: "grid", gap: 4 }}>
-              <span style={{ height: 2, width: 18, background: "#333", display: "block" }} />
-              <span style={{ height: 2, width: 18, background: "#333", display: "block" }} />
-              <span style={{ height: 2, width: 18, background: "#333", display: "block" }} />
-            </div>
-          </button>
-
-          {/* Mobile drawer */}
-          <div style={styles.drawer}>
-            {navItems.map((item) => {
-              const path = "/" + item.toLowerCase().replace(/\s+/g, "-");
-              return (
-                <Link
-                  key={item}
-                  to={path}
-                  style={styles.drawerLink}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {item}
-                </Link>
-              );
-            })}
-          </div>
-        </header>
-      </div>
-
       {/* Hero */}
       <div style={styles.container}>
         <section style={styles.hero} role="img" aria-label="Showroom image">
@@ -387,7 +227,10 @@ export default function Home() {
 
       {/* About */}
       <div style={styles.container}>
-        <section style={{ ...styles.section, display: "grid", gridTemplateColumns: aboutGrid, gap: 18, alignItems: "center" }} id="about">
+        <section
+          style={{ ...styles.section, display: "grid", gridTemplateColumns: aboutGrid, gap: 18, alignItems: "center" }}
+          id="about"
+        >
           <div>
             <h2 style={styles.sectionTitle}>About Shantha Motors</h2>
             <p style={styles.sectionSub}>
@@ -417,83 +260,82 @@ export default function Home() {
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>Google Reviews</h2>
           <div
-  style={{
-    display: "grid",
-    gridTemplateColumns: `repeat(${reviewCols}, 1fr)`,
-    gap: 16,
-  }}
->
-  {[
-    { name: "Aarav Sharma", rating: 5, time: "2 days ago", text: "Smooth booking process and quick delivery. Staff was very helpful throughout." },
-    { name: "Priya Nair", rating: 4.5, time: "1 week ago", text: "Good service quality, reasonable pricing. Will come back for servicing." },
-    { name: "Rohit Verma", rating: 4, time: "3 weeks ago", text: "Test ride arranged instantly, paperwork was quick and hassle-free." },
-    { name: "Ananya Iyer", rating: 5, time: "yesterday", text: "Transparent pricing and genuine accessories—very satisfied!" },
-    { name: "Vikram Rao", rating: 4.5, time: "4 days ago", text: "Service center turnaround was quick and professional." },
-    { name: "Sneha Kulkarni", rating: 4, time: "5 days ago", text: "Friendly staff, but the waiting area could be improved." },
-    { name: "Arjun Menon", rating: 5, time: "2 weeks ago", text: "Great experience from booking to delivery. Highly recommended." },
-    { name: "Meera Joshi", rating: 4.5, time: "6 days ago", text: "Prompt service and knowledgeable staff. Appreciate the quick updates." },
-    { name: "Siddharth Desai", rating: 4, time: "1 month ago", text: "Good range of bikes and fair EMI options. Satisfied overall." },
-    { name: "Kavya Reddy", rating: 5, time: "3 days ago", text: "Excellent after-sales service and polite staff." },
-  ].map((review, i) => {
-    const fullStars = Math.floor(review.rating);
-    const hasHalf = review.rating % 1 !== 0;
-    return (
-      <div
-        key={i}
-        style={{
-          border: "1px solid #eee",
-          borderRadius: 12,
-          padding: 12,
-          background: "#fff",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-          textAlign: "left",
-        }}
-      >
-        {/* Header: emoji avatar + name + time */}
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-          <div
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              background: "#eee",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 20,
-              marginRight: 10,
+              display: "grid",
+              gridTemplateColumns: `repeat(${reviewCols}, 1fr)`,
+              gap: 16,
             }}
           >
-            👤
+            {[
+              { name: "Aarav Sharma", rating: 5, time: "2 days ago", text: "Smooth booking process and quick delivery. Staff was very helpful throughout." },
+              { name: "Priya Nair", rating: 4.5, time: "1 week ago", text: "Good service quality, reasonable pricing. Will come back for servicing." },
+              { name: "Rohit Verma", rating: 4, time: "3 weeks ago", text: "Test ride arranged instantly, paperwork was quick and hassle-free." },
+              { name: "Ananya Iyer", rating: 5, time: "yesterday", text: "Transparent pricing and genuine accessories—very satisfied!" },
+              { name: "Vikram Rao", rating: 4.5, time: "4 days ago", text: "Service center turnaround was quick and professional." },
+              { name: "Sneha Kulkarni", rating: 4, time: "5 days ago", text: "Friendly staff, but the waiting area could be improved." },
+              { name: "Arjun Menon", rating: 5, time: "2 weeks ago", text: "Great experience from booking to delivery. Highly recommended." },
+              { name: "Meera Joshi", rating: 4.5, time: "6 days ago", text: "Prompt service and knowledgeable staff. Appreciate the quick updates." },
+              { name: "Siddharth Desai", rating: 4, time: "1 month ago", text: "Good range of bikes and fair EMI options. Satisfied overall." },
+              { name: "Kavya Reddy", rating: 5, time: "3 days ago", text: "Excellent after-sales service and polite staff." },
+            ].map((review, i) => {
+              const fullStars = Math.floor(review.rating);
+              const hasHalf = review.rating % 1 !== 0;
+              return (
+                <div
+                  key={i}
+                  style={{
+                    border: "1px solid #eee",
+                    borderRadius: 12,
+                    padding: 12,
+                    background: "#fff",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                    textAlign: "left",
+                  }}
+                >
+                  {/* Header: emoji avatar + name + time */}
+                  <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+                    <div
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        background: "#eee",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 20,
+                        marginRight: 10,
+                      }}
+                    >
+                      👤
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{review.name}</div>
+                      <div style={{ fontSize: 12, color: "#888" }}>{review.time}</div>
+                    </div>
+                  </div>
+
+                  {/* Stars */}
+                  <div style={{ color: "#FFD700", fontSize: 16, marginBottom: 6 }}>
+                    {"★".repeat(fullStars)}
+                    {hasHalf && "½"}
+                    {"☆".repeat(5 - fullStars - (hasHalf ? 1 : 0))}
+                    <span style={{ marginLeft: 6, color: "#555", fontSize: 12 }}>
+                      {review.rating.toFixed(1)}
+                    </span>
+                  </div>
+
+                  {/* Title + text */}
+                  <div style={{ fontWeight: 700, color: "#222", fontSize: 13, marginBottom: 4 }}>
+                    {review.rating >= 4.5 ? "Excellent" : "Good"}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#444" }}>
+                    {review.text}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 14 }}>{review.name}</div>
-            <div style={{ fontSize: 12, color: "#888" }}>{review.time}</div>
-          </div>
-        </div>
-
-        {/* Stars */}
-        <div style={{ color: "#FFD700", fontSize: 16, marginBottom: 6 }}>
-          {"★".repeat(fullStars)}
-          {hasHalf && "½"}
-          {"☆".repeat(5 - fullStars - (hasHalf ? 1 : 0))}
-          <span style={{ marginLeft: 6, color: "#555", fontSize: 12 }}>
-            {review.rating.toFixed(1)}
-          </span>
-        </div>
-
-        {/* Title + text */}
-        <div style={{ fontWeight: 700, color: "#222", fontSize: 13, marginBottom: 4 }}>
-          {review.rating >= 4.5 ? "Excellent" : "Good"}
-        </div>
-        <div style={{ fontSize: 13, color: "#444" }}>
-          {review.text}
-        </div>
-      </div>
-    );
-  })}
-</div>
-
         </section>
       </div>
 
