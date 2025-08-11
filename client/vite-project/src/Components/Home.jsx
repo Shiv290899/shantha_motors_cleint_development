@@ -230,6 +230,7 @@ export default function Home() {
     "Gallery",
     "Contact",
     "Login",
+    "About Us"
   ];
 
   return (
