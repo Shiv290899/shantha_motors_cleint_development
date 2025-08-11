@@ -401,7 +401,7 @@ export default function Home() {
               Whether it’s your first bike, an upgrade, or reliable servicing, our promise is simple:
               you’re not just a customer — you’re family.
             </p>
-            <a href="/about" style={styles.linkBtn}>Read More →</a>
+            <Link to="/about" style={styles.linkBtn}>Read More →</Link>
           </div>
           <img
             style={styles.aboutImg}
