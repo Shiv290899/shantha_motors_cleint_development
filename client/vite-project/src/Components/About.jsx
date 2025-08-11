@@ -125,7 +125,7 @@ export default function About() { // Default export of the About page
           <Paragraph
             style={{ color: "#fff", opacity: 0.95, maxWidth: 860, fontSize: heroSubSize }} // Responsive subtitle
           >
-            Founded by <Text strong>Nagesh</Text>, an <Text strong>NITK Civil Engineer</Text>,
+            Founded by <Text strong style={{ color: "white" }}>Nagesh</Text>, an <Text strong style={{ color: "white" }}>NITK Civil Engineer</Text>,
             Shantha Motors began with a single showroom and a bold mission: redefine the
             two-wheeler buying and ownership experience through trust, transparency, and joyful service.
           </Paragraph>
