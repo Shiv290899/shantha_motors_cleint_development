@@ -258,7 +258,7 @@ const BookingForm = () => {
               </Form.Item>
             </Col>
 
-            <Col xs={24} md={8}>
+            <Col xs={24} md={10}>
               {/* AUTO-FILLED ON-ROAD PRICE (READ ONLY) */}
               <Form.Item label="On‑Road Price (₹)" name="onRoadPrice">
                 <InputNumber
