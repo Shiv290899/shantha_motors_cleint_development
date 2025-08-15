@@ -7,7 +7,7 @@ import EmiCalculator from "./Components/EmiCalculator";
 import Home from "./Components/Home";
 import Login from "./Components/Login";
 import Register from "./Components/Register";
-import Navbar from "./Components/Navbar"; 
+import Navbar from "./Components/Navbar"; // ✅ new
 import Quotation from "./Components/Quotation";
 
 function App() {
@@ -19,8 +19,8 @@ function App() {
         <Route path="/home" element={<Home />} />
 
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
         <Route path="/quotation" element={<Quotation />} />
+        <Route path="/register" element={<Register />} />
 
         <Route path="/bookingform" element={<BookingForm />} />
         <Route path="/about" element={<About />} />
