@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Form,
   Input,
@@ -18,25 +18,80 @@ import { InboxOutlined, CreditCardOutlined } from "@ant-design/icons";
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
 const { useBreakpoint } = Grid;
+const { Option } = Select;
 
 const phoneRule = [
   { required: true, message: "Mobile number is required" },
-  {
-    pattern: /^[6-9]\d{9}$/,
-    message: "Enter a valid 10-digit Indian mobile number",
-  },
+  { pattern: /^[6-9]\d{9}$/, message: "Enter a valid 10-digit Indian mobile number" },
 ];
+
+// Normalize keys from your Excel-exported JSON
+const normalizeRow = (row = {}) => ({
+  company: String(row["Company Name"] || "").trim(),
+  model: String(row["Model Name"] || "").trim(),
+  variant: String(row["Variant"] || "").trim(),
+  onRoadPrice: Number(String(row["On-Road Price"] || "0").replace(/[,₹\s]/g, "")) || 0,
+});
 
 const BookingForm = () => {
   const screens = useBreakpoint();
-  const isMobile = !screens.md;          // < md
+  const isMobile = !screens.md;
   const isTabletOnly = screens.md && !screens.lg;
 
   const [form] = Form.useForm();
   const [aadharList, setAadharList] = useState([]);
   const [panList, setPanList] = useState([]);
+  const [bikeData, setBikeData] = useState([]);
 
-  // Prevent auto-upload; limit type & size
+  const [selectedCompany, setSelectedCompany] = useState("");
+  const [selectedModel, setSelectedModel] = useState("");
+
+  // Load & normalize from /public/bikeData.json
+  useEffect(() => {
+    fetch("/bikeData.json")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setBikeData(data.map(normalizeRow).filter(r => r.company && r.model && r.variant));
+        } else {
+          message.error("Invalid bike data format");
+        }
+      })
+      .catch(() => message.error("Failed to load bike data"));
+  }, []);
+
+  // Derived dropdown lists
+  const companies = useMemo(
+    () => [...new Set(bikeData.map((r) => r.company))],
+    [bikeData]
+  );
+
+  const models = useMemo(
+    () =>
+      [...new Set(bikeData.filter((r) => r.company === selectedCompany).map((r) => r.model))],
+    [bikeData, selectedCompany]
+  );
+
+  const variants = useMemo(
+    () =>
+      [
+        ...new Set(
+          bikeData
+            .filter((r) => r.company === selectedCompany && r.model === selectedModel)
+            .map((r) => r.variant)
+        ),
+      ],
+    [bikeData, selectedCompany, selectedModel]
+  );
+
+  // When variant changes, set ONLY onRoadPrice field
+  const handleVariantChange = (value) => {
+    const found = bikeData.find(
+      (r) => r.company === selectedCompany && r.model === selectedModel && r.variant === value
+    );
+    form.setFieldsValue({ onRoadPrice: found ? found.onRoadPrice : undefined });
+  };
+
   const beforeUpload = (file) => {
     const isValidType =
       file.type === "application/pdf" ||
@@ -51,11 +106,10 @@ const BookingForm = () => {
       message.error("File must be smaller than 4MB.");
       return Upload.LIST_IGNORE;
     }
-    return false; // stop auto-upload, keep in fileList
+    return false;
   };
 
   const onFinish = (values) => {
-    // normalize file objects
     const aadhar = aadharList[0]?.originFileObj || null;
     const pan = panList[0]?.originFileObj || null;
 
@@ -71,40 +125,44 @@ const BookingForm = () => {
     form.resetFields();
     setAadharList([]);
     setPanList([]);
+    setSelectedCompany("");
+    setSelectedModel("");
   };
 
-  // Smoothly scroll to the first error on small screens
   const onFinishFailed = ({ errorFields }) => {
     if (errorFields?.length) {
       form.scrollToField(errorFields[0].name, { behavior: "smooth", block: "center" });
     }
   };
 
-  // Shared card gradient & shadows tuned for mobile/tablet
   const headerBadge = (
-    <div style={{
-      height: isMobile ? 40 : 44,
-      width: isMobile ? 40 : 44,
-      borderRadius: 12,
-      display: "grid",
-      placeItems: "center",
-      color: "white",
-      background: "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
-      boxShadow: "0 8px 20px rgba(37, 99, 235, 0.35)",
-      fontSize: isMobile ? 20 : 22,
-    }}>
+    <div
+      style={{
+        height: isMobile ? 40 : 44,
+        width: isMobile ? 40 : 44,
+        borderRadius: 12,
+        display: "grid",
+        placeItems: "center",
+        color: "white",
+        background: "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
+        boxShadow: "0 8px 20px rgba(37, 99, 235, 0.35)",
+        fontSize: isMobile ? 20 : 22,
+      }}
+    >
       🏍️
     </div>
   );
 
   return (
-    <div style={{
-      padding: isMobile ? 12 : isTabletOnly ? 18 : 24,
-      background: isMobile ? "transparent" : "linear-gradient(180deg,#f8fbff 0%,#ffffff 100%)",
-      minHeight: "100dvh",
-      display: "grid",
-      alignItems: "start",
-    }}>
+    <div
+      style={{
+        padding: isMobile ? 12 : isTabletOnly ? 18 : 24,
+        background: isMobile ? "transparent" : "linear-gradient(180deg,#f8fbff 0%,#ffffff 100%)",
+        minHeight: "100dvh",
+        display: "grid",
+        alignItems: "start",
+      }}
+    >
       <Card
         bordered={false}
         style={{
@@ -112,8 +170,7 @@ const BookingForm = () => {
           maxWidth: 920,
           margin: isMobile ? "8px auto 24dvh" : "16px auto",
           borderRadius: 16,
-          boxShadow:
-            "0 10px 30px rgba(37, 99, 235, 0.10), 0 2px 8px rgba(0,0,0,0.06)",
+          boxShadow: "0 10px 30px rgba(37, 99, 235, 0.10), 0 2px 8px rgba(0,0,0,0.06)",
         }}
         bodyStyle={{ padding: isMobile ? 16 : 28 }}
         headStyle={{ borderBottom: "none", padding: isMobile ? "12px 16px 0" : "16px 28px 0" }}
@@ -124,9 +181,7 @@ const BookingForm = () => {
               <Title level={isMobile ? 4 : 3} style={{ margin: 0 }}>
                 Two Wheeler Booking
               </Title>
-              <Text type="secondary">
-                Fill the details below to reserve your ride. It takes ~2 mins.
-              </Text>
+              <Text type="secondary">Fill the details below to reserve your ride.</Text>
             </div>
           </div>
         }
@@ -137,26 +192,23 @@ const BookingForm = () => {
           onFinish={onFinish}
           onFinishFailed={onFinishFailed}
           requiredMark="optional"
-          scrollToFirstError
         >
-          {/* Name */}
+          {/* Customer Name */}
           <Form.Item
             label="Customer Name"
             name="customerName"
             rules={[{ required: true, message: "Please enter customer name" }]}
           >
-            <Input
-              size="large"
-              placeholder="e.g., Rahul Sharma"
-              allowClear
-              autoComplete="name"
-            />
+            <Input size="large" placeholder="e.g., Rahul Sharma" allowClear />
           </Form.Item>
 
           {/* Phones */}
           <Row gutter={[16, 0]}>
             <Col xs={24} md={12}>
-              <Form.Item label="Mobile Number" name="mobileNumber" rules={phoneRule}
+              <Form.Item
+                label="Mobile Number"
+                name="mobileNumber"
+                rules={phoneRule}
                 normalize={(v) => (v ? v.replace(/\D/g, "").slice(0, 10) : v)}
               >
                 <Input
@@ -164,67 +216,59 @@ const BookingForm = () => {
                   placeholder="10-digit number"
                   maxLength={10}
                   inputMode="numeric"
-                  pattern="[0-9]*"
                   allowClear
                 />
               </Form.Item>
-              <Text type="secondary" style={{ marginTop: -6, display: "block" }}>
-                Starts with 6/7/8/9, exactly 10 digits.
-              </Text>
             </Col>
-
             <Col xs={24} md={12}>
               <Form.Item
                 label="Alternate Mobile Number"
                 name="alternateMobileNumber"
-                rules={[
-                  { pattern: /^$|^[6-9]\d{9}$/, message: "Enter a valid 10-digit number" },
-                ]}
+                rules={[{ pattern: /^$|^[6-9]\d{9}$/, message: "Enter a valid 10-digit number" }]}
                 normalize={(v) => (v ? v.replace(/\D/g, "").slice(0, 10) : v)}
               >
-                <Input
-                  size="large"
-                  placeholder="Optional"
-                  maxLength={10}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  allowClear
-                />
+                <Input size="large" placeholder="Optional" maxLength={10} inputMode="numeric" allowClear />
               </Form.Item>
             </Col>
           </Row>
 
-          {/* Email + Amount */}
+          {/* Email + Booking Amount + On-Road Price */}
           <Row gutter={[16, 0]}>
-            <Col xs={24} md={12}>
+            <Col xs={24} md={8}>
               <Form.Item label="Email" name="email" rules={[{ type: "email" }]}>
-                <Input
-                  size="large"
-                  placeholder="you@example.com"
-                  allowClear
-                  autoComplete="email"
-                />
+                <Input size="large" placeholder="you@example.com" allowClear />
               </Form.Item>
             </Col>
 
-            <Col xs={24} md={12}>
+            <Col xs={24} md={8}>
+              {/* USER-ENTERED BOOKING AMOUNT */}
               <Form.Item
-                label="Booking Amount (₹)"
+                label="Booking Amount (₹) — Paid by Customer"
                 name="bookingAmount"
                 rules={[{ required: true, message: "Enter booking amount" }]}
               >
                 <InputNumber
                   size="large"
                   className="w-full"
-                  min={500}
+                  min={0}
                   step={500}
                   prefix={<CreditCardOutlined />}
-                  placeholder="e.g., 2000"
+                  placeholder="Enter amount paid"
                 />
               </Form.Item>
-              <Text type="secondary" style={{ marginTop: -6, display: "block" }}>
-                Minimum ₹500. Adjust as per your policy.
-              </Text>
+            </Col>
+
+            <Col xs={24} md={8}>
+              {/* AUTO-FILLED ON-ROAD PRICE (READ ONLY) */}
+              <Form.Item label="On‑Road Price (₹)" name="onRoadPrice">
+                <InputNumber
+                  size="large"
+                  className="w-full"
+                  readOnly
+                  placeholder="Select company/model/variant"
+                  formatter={(v) => `₹ ${String(v ?? "")}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                />
+              </Form.Item>
             </Col>
           </Row>
 
@@ -239,13 +283,40 @@ const BookingForm = () => {
               rows={isMobile ? 3 : 4}
               placeholder="House No, Street, Area, City, PIN"
               allowClear
-              autoComplete="street-address"
             />
           </Form.Item>
 
-          {/* Bike + Variant */}
+          {/* Company → Model → Variant */}
           <Row gutter={[16, 0]}>
-            <Col xs={24} md={12}>
+            <Col xs={24} md={8}>
+              <Form.Item
+                label="Company"
+                name="company"
+                rules={[{ required: true, message: "Select a company" }]}
+              >
+                <Select
+                  size="large"
+                  placeholder="Select Company"
+                  onChange={(value) => {
+                    setSelectedCompany(value);
+                    setSelectedModel("");
+                    form.setFieldsValue({
+                      bikeModel: undefined,
+                      variant: undefined,
+                      onRoadPrice: undefined, // clear on-road price when changing
+                    });
+                  }}
+                >
+                  {companies.map((c, i) => (
+                    <Option key={i} value={c}>
+                      {c}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} md={8}>
               <Form.Item
                 label="Bike Model"
                 name="bikeModel"
@@ -254,20 +325,22 @@ const BookingForm = () => {
                 <Select
                   size="large"
                   placeholder="Select Model"
-                  showSearch
-                  optionFilterProp="label"
-                  allowClear
-                  options={[
-                    { value: "Hero Splendor", label: "Hero Splendor" },
-                    { value: "Honda Shine", label: "Honda Shine" },
-                    { value: "TVS Apache", label: "TVS Apache" },
-                    { value: "Yamaha FZ", label: "Yamaha FZ" },
-                  ]}
-                />
+                  disabled={!selectedCompany}
+                  onChange={(value) => {
+                    setSelectedModel(value);
+                    form.setFieldsValue({ variant: undefined, onRoadPrice: undefined });
+                  }}
+                >
+                  {models.map((m, i) => (
+                    <Option key={i} value={m}>
+                      {m}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
 
-            <Col xs={24} md={12}>
+            <Col xs={24} md={8}>
               <Form.Item
                 label="Variant"
                 name="variant"
@@ -276,21 +349,20 @@ const BookingForm = () => {
                 <Select
                   size="large"
                   placeholder="Select Variant"
-                  showSearch
-                  optionFilterProp="label"
-                  allowClear
-                  options={[
-                    { value: "Standard", label: "Standard" },
-                    { value: "Deluxe", label: "Deluxe" },
-                    { value: "Disc Brake", label: "Disc Brake" },
-                    { value: "Electric Start", label: "Electric Start" },
-                  ]}
-                />
+                  disabled={!selectedModel}
+                  onChange={handleVariantChange}
+                >
+                  {variants.map((v, i) => (
+                    <Option key={i} value={v}>
+                      {v}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
           </Row>
 
-          {/* Documents */}
+          {/* Documents (optional) */}
           <Card
             size="small"
             title={<Text strong>Upload Documents</Text>}
@@ -301,7 +373,6 @@ const BookingForm = () => {
               <Col xs={24} md={12}>
                 <Form.Item
                   label="Aadhar Card (PDF/JPG/PNG)"
-                  // Use a custom validator so it works with controlled fileList
                   rules={[
                     {
                       validator: () =>
@@ -326,7 +397,6 @@ const BookingForm = () => {
                     <p className="ant-upload-text">
                       Click or drag file to this area to upload
                     </p>
-                    <p className="ant-upload-hint">Single file only. Max 4MB.</p>
                   </Dragger>
                 </Form.Item>
               </Col>
@@ -358,7 +428,6 @@ const BookingForm = () => {
                     <p className="ant-upload-text">
                       Click or drag file to this area to upload
                     </p>
-                    <p className="ant-upload-hint">Single file only. Max 4MB.</p>
                   </Dragger>
                 </Form.Item>
               </Col>
@@ -367,32 +436,9 @@ const BookingForm = () => {
 
           {/* Submit */}
           <Form.Item style={{ marginTop: 8, marginBottom: 0 }}>
-            <Button
-              type="primary"
-              htmlType="submit"
-              size={isMobile ? "middle" : "large"}
-              block
-              style={{
-                position: isMobile ? "fixed" : "static",
-                left: 0,
-                right: 0,
-                bottom: isMobile ? 8 : "auto",
-                marginInline: isMobile ? 12 : 0,
-                zIndex: 20,
-                borderRadius: 10,
-                boxShadow:
-                  "0 10px 20px rgba(37, 99, 235, 0.25), 0 2px 6px rgba(0,0,0,0.06)",
-              }}
-            >
+            <Button type="primary" htmlType="submit" size={isMobile ? "middle" : "large"} block>
               Reserve My Bike
             </Button>
-            {!isMobile && (
-              <div style={{ textAlign: "center", marginTop: 8 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  By submitting, you agree to our booking terms & verification policy.
-                </Text>
-              </div>
-            )}
           </Form.Item>
         </Form>
       </Card>
