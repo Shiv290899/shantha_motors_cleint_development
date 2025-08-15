@@ -258,18 +258,21 @@ const BookingForm = () => {
               </Form.Item>
             </Col>
 
-            <Col xs={24} md={10}>
+            <Col xs={24} md={8}> {/* increased from md={8} to md={16} */}
               {/* AUTO-FILLED ON-ROAD PRICE (READ ONLY) */}
-              <Form.Item label="On‑Road Price (₹)" name="onRoadPrice">
+              <Form.Item label="On-Road Price (₹)" name="onRoadPrice">
                 <InputNumber
                   size="large"
-                  className="w-full"
+                  style={{ width: '50%' }} // ensures it fills the column
                   readOnly
                   placeholder="Select company/model/variant"
-                  formatter={(v) => `₹ ${String(v ?? "")}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                  formatter={(v) =>
+                    `₹ ${String(v ?? "")}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                  }
                 />
               </Form.Item>
             </Col>
+
           </Row>
 
           {/* Address */}
