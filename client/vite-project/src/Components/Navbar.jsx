@@ -98,6 +98,7 @@ export default function Navbar() {
   // map labels to your actual paths (so no 404s)
   const navItems = [
     { label: "Home", path: "/" },
+    { label: "Quotation", path: "/quotation" },
     { label: "BookingForm", path: "/bookingform" },
     { label: "EMICalculator", path: "/emicalculator" }, // matches your route
     { label: "Gallery", path: "/gallery" },             // add this route if/when you have it
