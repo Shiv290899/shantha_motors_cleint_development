@@ -259,14 +259,7 @@ export default function QuotationOnePage() {
                 </Col>
               </>
             )}
-            <div className="emi-grid">
-                {TENURES.map((mo) => (
-                  <div key={mo} className="emi">
-                    <div className="m">{mo} months</div>
-                    <div className="v">{inr0(monthlyFor(mo))}</div>
-                  </div>
-                ))}
-              </div>
+           
 
             <Col span={24} style={{ textAlign: "right" }}>
               <Button type="primary" icon={<PrinterOutlined />} onClick={handlePrint}>
