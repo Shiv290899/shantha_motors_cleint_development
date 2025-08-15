@@ -259,6 +259,14 @@ export default function QuotationOnePage() {
                 </Col>
               </>
             )}
+            <div className="emi-grid">
+                {TENURES.map((mo) => (
+                  <div key={mo} className="emi">
+                    <div className="m">{mo} months</div>
+                    <div className="v">{inr0(monthlyFor(mo))}</div>
+                  </div>
+                ))}
+              </div>
 
             <Col span={24} style={{ textAlign: "right" }}>
               <Button type="primary" icon={<PrinterOutlined />} onClick={handlePrint}>
@@ -268,6 +276,7 @@ export default function QuotationOnePage() {
           </Row>
         </Form>
       </div>
+      
 
       {/* ---------- PRINT SLIP (one page) ---------- */}
       <div className="print-sheet">
@@ -277,6 +286,40 @@ export default function QuotationOnePage() {
             <div className="title">Shantha Motors</div>
             <div className="title">Quotation</div>
           </div>
+
+          <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: "12px",
+    borderBottom: "2px solid #ccc",
+    paddingBottom: "8px"
+  }}
+>
+  {/* Left Side - Company Info */}
+  <div>
+    <img
+      src="/shantha-logo.png"
+      alt="Shantha Motors Logo"
+      style={{ height: "50px", marginBottom: "4px" }}
+    />
+
+    
+    <div style={{ fontSize: "20px", fontWeight: "bold" }}>Shantha Motors</div>
+    <div style={{ fontSize: "12px" }}>Muddinapalya Rd, MPM Layout, ITI Employees Layout, Annapurneshwari Nagar, Bengaluru, Karnataka 560091</div>
+    <div style={{ fontSize: "12px" }}>📞 9731366291/ 8073283502 | ✉ shanthamotors@gmail.com</div>
+  </div>
+
+  {/* Right Side - Quotation Info */}
+  <div style={{ textAlign: "right" }}>
+    <div style={{ fontSize: "12px" }}>Date: {new Date().toLocaleDateString("en-IN")}</div>
+    <div style={{ fontSize: "12px" }}>Valid Until: 30 days</div>
+  </div>
+</div>
+
+
+
 
           {/* Customer */}
           <div className="box" style={{ marginBottom: 8 }}>
