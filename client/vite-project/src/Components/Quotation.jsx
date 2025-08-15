@@ -363,7 +363,6 @@ export default function QuotationOnePage() {
             {/* Right: Quotation meta */}
             <div style={{ textAlign: "right" }}>
               <div className="quo-title">Quotation</div>
-              <div style={{ fontSize: 12 }}><b>Quotation No:</b> {quoteNo}</div>
               <div style={{ fontSize: 12 }}><b>Date:</b> {fmtIN(quoteDate)}</div>
               <div style={{ fontSize: 12 }}><b>Valid Until:</b> {fmtIN(validUntil)}</div>
             </div>
