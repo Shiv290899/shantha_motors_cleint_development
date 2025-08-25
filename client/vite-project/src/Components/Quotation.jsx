@@ -5,17 +5,81 @@ import {
 } from "antd";
 import { PrinterOutlined } from "@ant-design/icons";
 
-const { Text } = Typography;
 const { Option } = Select;
 
-// ----- Config -----
-const PROCESSING_FEE = 8000;       // included in principal
-const RATE_LOW = 9;                // DP ≥ 30%
-const RATE_HIGH = 11;              // DP < 30%
-const TENURES = [18, 24, 30, 36];
-const VALID_DAYS = 15;
+/* ======================
+   Google Sheets (CSV) loader
+   ====================== */
 
-// ----- Static options (from your paper quotation) -----
+// ✅ Your published CSV URL
+const SHEET_CSV_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-8UHyk0UT-uGdJVbXz4Cevu5F2s583Q3XgtUnpDtNbEa9_RkVRWipbyx5NipNNQ/pub?output=csv";
+
+// Accept these header variants from your sheet
+const HEADERS = {
+  company: ["Company", "Company Name"],
+  model: ["Model", "Model Name"],
+  variant: ["Variant"],
+  price: ["On-Road Price", "On Road Price", "Price"],
+};
+
+// Minimal CSV parser (handles quotes and commas)
+const parseCsv = (text) => {
+  const rows = [];
+  let row = [], col = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i], n = text[i + 1];
+    if (c === '"' && !inQuotes) { inQuotes = true; continue; }
+    if (c === '"' && inQuotes) {
+      if (n === '"') { col += '"'; i++; continue; }
+      inQuotes = false; continue;
+    }
+    if (c === "," && !inQuotes) { row.push(col); col = ""; continue; }
+    if ((c === "\n" || c === "\r") && !inQuotes) {
+      if (col !== "" || row.length) { row.push(col); rows.push(row); row = []; col = ""; }
+      if (c === "\r" && n === "\n") i++;
+      continue;
+    }
+    col += c;
+  }
+  if (col !== "" || row.length) { row.push(col); rows.push(row); }
+  return rows;
+};
+
+const fetchSheetRowsCSV = async (url) => {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("Sheet fetch failed");
+  const csv = await res.text();
+  const rows = parseCsv(csv);
+  if (!rows.length) return [];
+  const headers = rows[0].map((h) => (h || "").trim());
+  return rows.slice(1).map((r) => {
+    const obj = {};
+    headers.forEach((h, i) => (obj[h] = r[i] ?? ""));
+    return obj;
+  });
+};
+
+const pick = (row, keys) =>
+  String(keys.map((k) => row[k] ?? "").find((v) => v !== "") || "").trim();
+
+const normalizeSheetRow = (row = {}) => ({
+  company: pick(row, HEADERS.company),
+  model: pick(row, HEADERS.model),
+  variant: pick(row, HEADERS.variant),
+  onRoadPrice:
+    Number(String(pick(row, HEADERS.price) || "0").replace(/[,₹\s]/g, "")) || 0,
+});
+
+/* ======================
+   Config + static options
+   ====================== */
+
+const PROCESSING_FEE = 8000; // included in principal
+const RATE_LOW = 9;          // DP ≥ 30%
+const RATE_HIGH = 11;        // DP < 30%
+const TENURES = [18, 24, 30, 36];
+
 const EXECUTIVES = ["Rukmini", "Radha", "Manasa", "Karthik", "Suresh"];
 
 const EXTRA_FITTINGS = [
@@ -45,18 +109,14 @@ const DOCUMENTS_REQ = [
   "Local Address Proof",
 ];
 
-// ----- Helpers -----
+/* ======================
+   Helpers
+   ====================== */
+
 const phoneRule = [
   { required: true, message: "Mobile number is required" },
   { pattern: /^[6-9]\d{9}$/, message: "Enter a valid 10-digit Indian mobile number" },
 ];
-
-const normalizeRow = (row = {}) => ({
-  company: String(row["Company Name"] || "").trim(),
-  model: String(row["Model Name"] || "").trim(),
-  variant: String(row["Variant"] || "").trim(),
-  onRoadPrice: Number(String(row["On-Road Price"] || "0").replace(/[,₹\s]/g, "")) || 0,
-});
 
 const inr0 = (n) =>
   new Intl.NumberFormat("en-IN", {
@@ -68,18 +128,21 @@ const inr0 = (n) =>
 const today = () => new Date();
 const fmtIN = (d) => d.toLocaleDateString("en-IN");
 
-// --- NEW: phone + WhatsApp helpers ---
+// Phone normalizer for WhatsApp
 const toE164India = (raw) => {
-  // Keep digits, trim leading zeros, add '91' if it's a plain 10-digit number
   const digits = String(raw || "").replace(/\D/g, "");
   if (!digits) return "";
   const noLeadZero = digits.replace(/^0+/, "");
   if (noLeadZero.length === 10) return `91${noLeadZero}`;
   if (noLeadZero.startsWith("91") && noLeadZero.length === 12) return noLeadZero;
-  return noLeadZero; // fallback: use what we have
+  return noLeadZero;
 };
 
-export default function Quotation() {
+/* ======================
+   Component
+   ====================== */
+
+export default function QuotationOnePage() {
   const [form] = Form.useForm();
 
   // vehicle data
@@ -95,24 +158,28 @@ export default function Quotation() {
 
   // executive + checklist states
   const [executive, setExecutive] = useState(EXECUTIVES[0]);
-  const [extraFittings, setExtraFittings] = useState(EXTRA_FITTINGS); // default all ON
-  const [motorCycles, setMotorCycles] = useState(MOTOR_CYCLES);       // default all ON
-  const [documentsReq, setDocumentsReq] = useState(DOCUMENTS_REQ);    // default all ON
+  const [extraFittings, setExtraFittings] = useState(EXTRA_FITTINGS);
+  const [motorCycles, setMotorCycles] = useState(MOTOR_CYCLES);
+  const [documentsReq, setDocumentsReq] = useState(DOCUMENTS_REQ);
 
   // header metadata
   const [quoteDate] = useState(today());
 
+  // Load from Google Sheet
   useEffect(() => {
-    fetch("/bikeData.json")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setBikeData(
-            data.map(normalizeRow).filter((r) => r.company && r.model && r.variant)
-          );
-        } else message.error("Invalid bike data format");
-      })
-      .catch(() => message.error("Failed to load bike data"));
+    (async () => {
+      try {
+        const raw = await fetchSheetRowsCSV(SHEET_CSV_URL);
+        const cleaned = raw
+          .map(normalizeSheetRow)
+          .filter((r) => r.company && r.model && r.variant);
+        if (!cleaned.length) message.error("No valid rows found in the Google Sheet.");
+        setBikeData(cleaned);
+      } catch (err) {
+        console.error(err);
+        message.error("Failed to load Google Sheet data");
+      }
+    })();
   }, []);
 
   const companies = useMemo(() => [...new Set(bikeData.map((r) => r.company))], [bikeData]);
@@ -121,12 +188,13 @@ export default function Quotation() {
     [bikeData, company]
   );
   const variants = useMemo(
-    () =>
-      [
-        ...new Set(
-          bikeData.filter((r) => r.company === company && r.model === model).map((r) => r.variant)
-        ),
-      ],
+    () => [
+      ...new Set(
+        bikeData
+          .filter((r) => r.company === company && r.model === model)
+          .map((r) => r.variant)
+      ),
+    ],
     [bikeData, company, model]
   );
 
@@ -171,39 +239,35 @@ export default function Quotation() {
     }
   };
 
-  // --- NEW: WhatsApp button handler ---
+  // WhatsApp button handler (short, impressive line)
   const handleWhatsApp = async () => {
-  try {
-    await form.validateFields(["mobile"]); // ensures phoneRule passes
-  } catch {
-    message.warning("Please enter a valid 10-digit mobile number.");
-    return;
-  }
+    try {
+      await form.validateFields(["mobile"]);
+    } catch {
+      message.warning("Please enter a valid 10-digit mobile number.");
+      return;
+    }
 
-  const mobileRaw = form.getFieldValue("mobile");
-  const e164 = toE164India(mobileRaw);
-  if (!e164) {
-    message.warning("Could not read the mobile number.");
-    return;
-  }
+    const mobileRaw = form.getFieldValue("mobile");
+    const e164 = toE164India(mobileRaw);
+    if (!e164) {
+      message.warning("Could not read the mobile number.");
+      return;
+    }
 
-  const name = (form.getFieldValue("name") || "Customer").trim();
-  
-  // ✨ Sweet & impressive Shantha Motors welcome message
-  const welcomeMsg =
-    `🌟 Welcome to *Shantha Motors*, ${name}! 🌟` +
-    `\n\nHere’s your quotation — because every great ride begins with trust and style.` +
-    `\n\n🚀 Let’s make your journey memorable!`;
+    const name = (form.getFieldValue("name") || "Customer").trim();
+    const welcomeMsg =
+      `🌟 Welcome to *Shantha Motors*, ${name}! Your quotation is ready — ` +
+      `every great ride begins with trust and style.`;
 
-  const url = `https://wa.me/${e164}?text=${encodeURIComponent(welcomeMsg)}`;
-  window.open(url, "_blank");
-};
+    const url = `https://wa.me/${e164}?text=${encodeURIComponent(welcomeMsg)}`;
+    window.open(url, "_blank");
+  };
 
-
-  // Print helper: numbered/bulleted list (no tick marks)
+  // Print helper: numbered/bulleted list
   const PrintList = ({ items, numbered = true }) => {
     if (!items?.length) return <span>-</span>;
-    const Tag = numbered ? "ol" : "ul"; // set numbered=false to use bullets
+    const Tag = numbered ? "ol" : "ul";
     return (
       <Tag className="plist">
         {items.map((t) => (
@@ -219,20 +283,17 @@ export default function Quotation() {
       <style>{`
         .wrap { max-width: 1000px; margin: 12px auto; padding: 0 12px; }
         .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
-        .section-title { font-weight: 600; margin-bottom: 8px; }
 
         @media (max-width: 575px) { .logo { height: 36px; } .brand { font-size: 18px; font-weight: 700; } .quo-title { font-size: 18px; font-weight: 700; } }
         @media (min-width: 576px) and (max-width: 991px) { .logo { height: 44px; } .brand { font-size: 20px; font-weight: 700; } .quo-title { font-size: 20px; font-weight: 700; } }
         @media (min-width: 992px) { .logo { height: 50px; } .brand { font-size: 22px; font-weight: 800; } .quo-title { font-size: 22px; font-weight: 800; } }
 
-        /* On-screen EMI grid */
         .emi-grid { display: grid; grid-template-columns: repeat(2, minmax(140px, 1fr)); gap: 8px; }
         @media (min-width: 768px) { .emi-grid { grid-template-columns: repeat(4, minmax(140px, 1fr)); } }
         .emi { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; text-align: center; }
         .emi .m { font-weight: 600; }
         .emi .v { font-weight: 700; font-size: 18px; }
 
-        /* print sheet */
         @media print {
           @page { size: A4 portrait; margin: 10mm; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -244,19 +305,18 @@ export default function Quotation() {
           .row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
           .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 12px; }
           .box { border: 1px solid #bbb; border-radius: 6px; padding: 6px 8px; }
-          .title { font-size: 14pt; font-weight: 700; }
           .sub { font-weight: 600; margin-bottom: 4px; }
           .addr { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
           .emi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
           .emi { border: 1px solid #bbb; border-radius: 6px; padding: 8px 6px; text-align: center; }
           .emi .m { font-weight: 600; }
           .emi .v { font-weight: 700; font-size: 13pt; }
-          .plist { margin: 0; padding-left: 18px; } /* numbered/bulleted list spacing */
+          .plist { margin: 0; padding-left: 18px; }
           .plist li { margin: 0 0 2px; }
         }
       `}</style>
 
-      {/* ---------- On-screen inputs (checkboxes to control print visibility) ---------- */}
+      {/* ---------- On-screen inputs ---------- */}
       <div className="wrap no-print">
         <div className="card">
           <Form layout="vertical" form={form}>
@@ -310,6 +370,7 @@ export default function Quotation() {
                   </Select>
                 </Form.Item>
               </Col>
+
               <Col xs={24} md={8}>
                 <Form.Item label="Model" name="bikeModel" rules={[{ required: true, message: "Select model" }]}>
                   <Select
@@ -327,6 +388,7 @@ export default function Quotation() {
                   </Select>
                 </Form.Item>
               </Col>
+
               <Col xs={24} md={8}>
                 <Form.Item label="Variant" name="variant" rules={[{ required: true, message: "Select variant" }]}>
                   <Select placeholder="Select Variant" disabled={!model} onChange={handleVariant}>
@@ -345,6 +407,7 @@ export default function Quotation() {
                   />
                 </Form.Item>
               </Col>
+
               <Col xs={24} md={12}>
                 <Form.Item label="Payment Mode">
                   <Radio.Group
@@ -376,7 +439,7 @@ export default function Quotation() {
                 </Col>
               )}
 
-              {/* --- Side-by-side toggles (control what appears on print) --- */}
+              {/* Toggles for print lists */}
               <Col span={24}>
                 <Row gutter={[12, 8]}>
                   <Col xs={24} md={8}>
@@ -416,7 +479,7 @@ export default function Quotation() {
               </Col>
 
               <Col span={24} style={{ textAlign: "right" }}>
-                {/* NEW: WhatsApp Button */}
+                {/* WhatsApp */}
                 <Button
                   className="no-print"
                   onClick={handleWhatsApp}
@@ -427,10 +490,16 @@ export default function Quotation() {
                     borderColor: "#25D366",
                   }}
                 >
-                  WhatsApp 
+                  WhatsApp
                 </Button>
 
-                <Button className="no-print" type="primary" icon={<PrinterOutlined />} onClick={handlePrint}>
+                {/* Print */}
+                <Button
+                  className="no-print"
+                  type="primary"
+                  icon={<PrinterOutlined />}
+                  onClick={handlePrint}
+                >
                   Print
                 </Button>
               </Col>
@@ -451,7 +520,6 @@ export default function Quotation() {
             borderBottom: "2px solid #ccc",
             paddingBottom: 8
           }}>
-            {/* Left: Branding */}
             <div>
               <img
                 src="/shantha-logo.png"
@@ -468,7 +536,6 @@ export default function Quotation() {
               </div>
             </div>
 
-            {/* Right: Quotation meta */}
             <div style={{ textAlign: "right" }}>
               <div className="quo-title">Quotation</div>
               <div style={{ fontSize: 12 }}><b>Date:</b> {fmtIN(quoteDate)}</div>
@@ -522,26 +589,25 @@ export default function Quotation() {
             </div>
           )}
 
-          {/* Executive + side-by-side lists */}
+          {/* Executive + lists */}
           <div className="box" style={{ marginBottom: 8 }}>
             <div className="row" style={{ marginBottom: 6 }}>
               <div><b>Executive Name:</b> {executive || "-"}</div>
               <div></div>
             </div>
 
-            {/* side-by-side like your paper form */}
             <div className="row-3">
               <div>
                 <div className="sub">Extra Fittings</div>
-                <PrintList items={extraFittings} numbered={true} />
+                <PrintList items={extraFittings} numbered />
               </div>
               <div>
                 <div className="sub">Motor Cycles</div>
-                <PrintList items={motorCycles} numbered={true} />
+                <PrintList items={motorCycles} numbered />
               </div>
               <div>
                 <div className="sub">Documents Required</div>
-                <PrintList items={documentsReq} numbered={true} />
+                <PrintList items={documentsReq} numbered />
               </div>
             </div>
           </div>
