@@ -3,6 +3,7 @@ import { Button, Form, Input, Checkbox, Typography, message } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./auth.css";
+import { RegisterUser } from "../apiCalls/users";
 
 const { Title, Text } = Typography;
 
@@ -12,7 +13,7 @@ function Register() {
   const [loading, setLoading] = React.useState(false);
 
   // TODO: point to your real API (Express/Mongo)
-  const registerUser = (payload) =>
+  const RegisterUser = (payload) =>
     axios.post("http://localhost:8082/api/users/register", payload);
 
   const onFinish = async (values) => {
@@ -25,7 +26,7 @@ function Register() {
 
     try {
       setLoading(true);
-      const res = await registerUser(payload);
+      const res = await RegisterUser(payload);
       const { data } = res || {};
       if (data?.success) {
         message.success("Registration successful! Please login.");

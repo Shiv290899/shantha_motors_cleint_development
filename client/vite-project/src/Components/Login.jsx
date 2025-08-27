@@ -1,20 +1,40 @@
 import { useState } from "react";
-import { Button, Form, Input } from "antd";
+import { Button, Form, Input, message } from "antd"; // ✅ added message for notifications
 import { Link, useNavigate } from "react-router-dom";
 import "./auth.css";
+import { LoginUser } from "../apiCalls/users";
+import { CompassOutlined } from "@ant-design/icons";
 
 function Login() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false); // ✅ inside component
+  const [loading, setLoading] = useState(false);
 
-  const onFinish = (values) => {
+  const onFinish = async (values) => {
     console.log("Login form submitted:", values);
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      // Call backend API
+      const data = await LoginUser(values);
+      console.log(data);
+
+      if (data?.success) {
+        // Save token if your backend sends one
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+        }
+
+        message.success("Login successful!");
+        navigate("/"); // redirect home
+      } else {
+        message.error(data?.message || "Invalid email or password");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      message.error("Something went wrong, please try again");
+    } finally {
       setLoading(false);
-      alert("Login successful!");
-      navigate("/");
-    }, 1000);
+    }
   };
 
   return (
@@ -42,7 +62,7 @@ function Login() {
             type="primary"
             block
             htmlType="submit"
-            loading={loading} // show spinner
+            loading={loading}
           >
             Login
           </Button>
