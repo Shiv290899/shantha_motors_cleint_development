@@ -100,7 +100,7 @@ export default function Navbar() {
     { label: "Home", path: "/" },
     { label: "BookingForm", path: "/bookingform" },
     { label: "EMICalculator", path: "/emicalculator" }, // matches your route
-    { label: "Gallery", path: "/gallery" },             // add this route if/when you have it
+    { label: "Gllery", path: "/gallery" },             // add this route if/when you have it
     { label: "Contact", path: "/contact" },
     { label: "Login", path: "/login" },
     { label: "About Us", path: "/about-us" },
