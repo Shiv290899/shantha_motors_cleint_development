@@ -19,6 +19,7 @@ function App() {
 
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+         <Route path="/a4form" element={<A4Form/>} />
 
         <Route path="/bookingform" element={<BookingForm />} />
         <Route path="/about" element={<About />} />
