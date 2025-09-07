@@ -8,6 +8,7 @@ import Home from "./Components/Home";
 import Login from "./Components/Login";
 import Register from "./Components/Register";
 import Navbar from "./Components/Navbar"; // ✅ new
+import A4Form from "./Components/A4Form";
 
 function App() {
   return (
