@@ -1,1 +1,0 @@
-mongodb+srv://knshivakumar139:G0S3YvOYZGSMqaLp@cluster0.ud5oc.mongodb.net/Shantha?retryWrites=true&w=majority&appName=Cluster0

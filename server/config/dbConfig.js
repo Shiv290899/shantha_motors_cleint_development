@@ -1,14 +1,22 @@
 const mongoose = require('mongoose')
-const dbString = "mongodb+srv://knshivakumar139:G0S3YvOYZGSMqaLp@cluster0.ud5oc.mongodb.net/Shantha?retryWrites=true&w=majority&appName=Cluster0"
 
-mongoose.connect(dbString);
+// Support both MONGO_URI and MONGODB_URI env names
+const uri = process.env.MONGO_URI || process.env.MONGODB_URI
+if (!uri) {
+  console.error('MONGO_URI/MONGODB_URI is not set. Please configure it in server/.env')
+  throw new Error('Missing MONGO_URI')
+}
 
-const connection = mongoose.connection;
+mongoose.connect(uri, {
+  serverSelectionTimeoutMS: 10000,
+})
 
-connection.on("connected", () => {
-  console.log("Connection Successful");
-});
+const connection = mongoose.connection
 
-connection.on("error", () => {
-  console.log("Connection Unsuccessful");
-});
+connection.on('connected', () => {
+  console.log('MongoDB connection successful')
+})
+
+connection.on('error', (err) => {
+  console.error('MongoDB connection error', err?.message || err)
+})
